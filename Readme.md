@@ -41,6 +41,10 @@ Should be used by the player to join an existing group. A player can only join
 an existing group if doing so will not cause the playersInGroup limit to be
 exceeded.
 
+### room-message
+Is sent to everyone in the room. The client should subscribe to this to get info
+about room events.
+
 ### make-move
 This is sent from the client to the server when the player wants to make a move,
 the "move" is to be sent as a string value which should then be parsed as json
