@@ -23,7 +23,7 @@ import (
 )
 
 // Version ...
-var Version = "No Version Provided"
+var Version = "No Version Specified"
 
 // Events that are exposed to the client
 const (
