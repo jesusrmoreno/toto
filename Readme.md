@@ -1,13 +1,14 @@
-# What is it?
-__Toto__ is a game server for creating quick prototypes of websocket based games.
-By exposing a few key events __Toto__ makes it easy to start making multiplayer games.
-__Toto__ serves as a relay point for communication between clients. It does not
-handle any of the game logic and expects that the clients will check all relayed
-messages.
+# Toto
+__Toto__ is a game server for creating quick prototypes of websocket based
+games. By exposing a few key events Toto makes it easy to start making
+multiplayer games. Toto serves as a relay point for communication between
+clients. It does not handle any of the game logic and expects that the clients
+will check all relayed messages.
 
 # How
 First a game definition must be created and placed in a folder called _games_ in
-the directory where __Toto__ is run. A game definition is written in TOML and looks like this:
+the directory where Toto is run. A game definition is written in TOML and
+looks like this:
 ```toml
 # The number of players required to create a group
 playersInGroup = 2
@@ -19,11 +20,12 @@ displayTitle = "This is an example game!"
 uniqueKey = "example-game"
 ```
 
-Here players in group states the number of players that must be placed in a group.
+Here players in group states the number of players that must be placed in a
+group.
 Display title is what players will be shown, and uniqueKey is the key that
-__Toto__ expects the client to send when requesting to join a game. These are all
-required fields and __Toto__ will throw an error if there are fields missing or if
-the uniqueKey conflicts with another declared game.
+__Toto__ expects the client to send when requesting to join a game.
+These are all required fields and __Toto__ will throw an error if there are
+fields missing or if the uniqueKey conflicts with another declared game.
 
 # Events
 ### join-game
