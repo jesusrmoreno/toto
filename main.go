@@ -79,7 +79,7 @@ func ReadGameFiles(gameDir string) (domain.GameMap, error) {
 		r := io.Reader(raw)
 		dummy := domain.Game{}
 		if meta, err := toml.DecodeReader(r, &dummy); err != nil {
-			fmt.Println(meta)
+			log.Println(meta)
 			return nil, errors.New("Invalid configuration in file: " + f)
 		}
 		g := domain.Game{
@@ -167,7 +167,7 @@ func GroupPlayers(g domain.Game, server *socketio.Server, gi *GamesInfo) {
 func main() {
 	games, err := ReadGameFiles("./games")
 	for key, game := range games {
-		fmt.Println("Loaded:", key, "from", game.FileName)
+		log.Println("Loaded:", key, "from", game.FileName)
 	}
 	if err != nil {
 		log.Fatal(err)
