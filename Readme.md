@@ -5,6 +5,11 @@ multiplayer games. Toto serves as a relay point for communication between
 clients. It does not handle any of the game logic and expects that the clients
 will check all relayed messages.
 
+# Installing
+```bash
+go get github.com/tiltfactor/toto
+```
+
 # How
 First a game definition must be created and placed in a folder called _games_ in
 the directory where Toto is run. A game definition is written in TOML and
