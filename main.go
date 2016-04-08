@@ -16,6 +16,7 @@ import (
 	"github.com/jesusrmoreno/toto/implementations"
 	"github.com/jesusrmoreno/toto/utils"
 
+	"github.com/BurntSushi/toml"
 	"github.com/jesusrmoreno/sad-squid"
 )
 
@@ -64,7 +65,7 @@ type GamesInfo struct {
 // game struct definition, these must be json files, and loads them into our
 // game map.
 func ReadGameFiles(gameDir string) (domain.GameMap, error) {
-	files, err := filepath.Glob(gameDir + "/*.json")
+	files, err := filepath.Glob(gameDir + "/*.toml")
 	gm := domain.GameMap{}
 	if err != nil {
 		return nil, err
@@ -77,14 +78,14 @@ func ReadGameFiles(gameDir string) (domain.GameMap, error) {
 		}
 		r := io.Reader(raw)
 		dummy := domain.Game{}
-		if err := json.NewDecoder(r).Decode(&dummy); err != nil {
-			return nil, errors.New("Invalid JSON in file: " + f)
+		if meta, err := toml.DecodeReader(r, &dummy); err != nil {
+			fmt.Println(meta)
+			return nil, errors.New("Invalid configuration in file: " + f)
 		}
 		g := domain.Game{
-			Players:        dummy.Players,
-			Title:          dummy.Title,
-			UUID:           dummy.UUID,
-			ExamplePayload: dummy.ExamplePayload,
+			Players: dummy.Players,
+			Title:   dummy.Title,
+			UUID:    dummy.UUID,
 			Lobby: impl.Lobby{
 				// We implement our lobby as a buffered channel that takes the number of
 				// players specified in the config file for the game and makes that the
@@ -165,6 +166,9 @@ func GroupPlayers(g domain.Game, server *socketio.Server, gi *GamesInfo) {
 
 func main() {
 	games, err := ReadGameFiles("./games")
+	for key, game := range games {
+		fmt.Println("Loaded:", key, "from", game.FileName)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
