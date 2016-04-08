@@ -18,7 +18,11 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/jesusrmoreno/sad-squid"
+
+	"github.com/codegangsta/cli"
 )
+
+const Version = "No Version Provided"
 
 // Events that are exposed to the client
 const (
@@ -164,7 +168,8 @@ func GroupPlayers(g domain.Game, server *socketio.Server, gi *GamesInfo) {
 	}
 }
 
-func main() {
+// StartServer ...
+func StartServer(c *cli.Context) {
 	games, err := ReadGameFiles("./games")
 	for key, game := range games {
 		log.Println("Loaded:", key, "from", game.FileName)
@@ -232,13 +237,25 @@ func main() {
 		})
 	})
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3000"
-	}
-
+	port := c.String("port")
 	http.Handle("/socket.io/", server)
 	http.Handle("/", http.FileServer(http.Dir("./asset")))
 	log.Println("Serving at localhost:" + port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
+}
+
+func main() {
+	app := cli.NewApp()
+	app.Name = "Toto"
+	app.Usage = "a server for creating quick prototype websocket based games."
+	app.Action = StartServer
+	app.Version = Version
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "port, p",
+			Value: "3000",
+			Usage: "The port to run the server on",
+		},
+	}
+	app.Run(os.Args)
 }
