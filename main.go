@@ -22,7 +22,8 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-const Version = "No Version Provided"
+// Version ...
+var Version = "No Version Provided"
 
 // Events that are exposed to the client
 const (
