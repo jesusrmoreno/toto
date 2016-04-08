@@ -1,0 +1,9 @@
+{
+  "playersInGroup": 2,
+  "displayTitle": "This is an example game!",
+  "uniqueKey": "example-game",
+  "examplePayload": {
+    "player": "x",
+    "square": 0
+  }
+}
