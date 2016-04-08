@@ -8,6 +8,7 @@ will check all relayed messages.
 # Installing
 ```bash
 go get github.com/tiltfactor/toto
+toto --port 8080
 ```
 
 # How
