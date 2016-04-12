@@ -169,6 +169,17 @@ func GroupPlayers(g domain.Game, server *socketio.Server, gi *GamesInfo) {
 	}
 }
 
+func (s customServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	origin := r.Header.Get("Origin")
+	w.Header().Set("Access-Control-Allow-Origin", origin)
+	s.Server.ServeHTTP(w, r)
+}
+
+type customServer struct {
+	Server *socketio.Server
+}
+
 // StartServer ...
 func StartServer(c *cli.Context) {
 	games, err := ReadGameFiles("./games")
@@ -180,6 +191,10 @@ func StartServer(c *cli.Context) {
 	}
 
 	server, err := socketio.NewServer(nil)
+	s := customServer{
+		Server: server,
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -239,7 +254,8 @@ func StartServer(c *cli.Context) {
 	})
 
 	port := c.String("port")
-	http.Handle("/socket.io/", server)
+
+	http.Handle("/socket.io/", s)
 	http.Handle("/", http.FileServer(http.Dir("./asset")))
 	log.Println("Serving at localhost:" + port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
