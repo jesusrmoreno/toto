@@ -255,7 +255,7 @@ func StartServer(c *cli.Context) {
 				}
 				so.BroadcastTo(room, moveMade, r)
 			} else {
-				log.Println("No room assigned", so.Id())
+				log.Println("No room assigned for", so.Id())
 				so.Emit(serverError, errorResponse(serverError, "Not in any Room"))
 			}
 		})
