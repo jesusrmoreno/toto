@@ -209,15 +209,19 @@ func StartServer(c *cli.Context) {
 	server.On("connection", func(so socketio.Socket) {
 		// Makes it so that the player joins a room with his/her unique id.
 		so.Join(so.Id())
+		log.Println("Connection from", so.Id())
 		so.On(joinGame, func(req json.RawMessage) {
 			m := map[string]string{}
 			if err := json.Unmarshal(req, &m); err != nil {
+				log.Println("Invalid JSON from", so.Id())
 				so.Emit(clientError, errorResponse(clientError, "Invalid JSON"))
 			}
 			gameID, exists := m["gameId"]
 			if !exists {
+				log.Println("No game id from", so.Id())
 				so.Emit(clientError, errorResponse(clientError, "Must include GameID"))
 			}
+			log.Println(so.Id(), "attempted to join game", gameID)
 			// If the player attempts to connect to a game we first have to make
 			// sure that they are joining a game that is registered with our server.
 			if g, exists := games[gameID]; exists {
@@ -225,6 +229,7 @@ func StartServer(c *cli.Context) {
 					Comm: so,
 				})
 			} else {
+				log.Println("Invalid GameId from", so.Id())
 				so.Emit(clientError, errorResponse(clientError, "Invalid GameID"))
 			}
 		})
@@ -233,10 +238,12 @@ func StartServer(c *cli.Context) {
 			if exists {
 				m := map[string]interface{}{}
 				if err := json.Unmarshal(move, &m); err != nil {
+					log.Println("Invalid JSON from", so.Id())
 					so.Emit(clientError, errorResponse(clientError, "Invalid JSON"))
 				}
 				turn, exists := info.TurnMap.Get(room + ":" + so.Id())
 				if !exists {
+					log.Println("No turn assigned", so.Id())
 					so.Emit(serverError, errorResponse(serverError, "No turn assigned"))
 				}
 				// Overwrites who's turn it is using the turn map assigned at join.
@@ -248,6 +255,7 @@ func StartServer(c *cli.Context) {
 				}
 				so.BroadcastTo(room, moveMade, r)
 			} else {
+				log.Println("No room assigned", so.Id())
 				so.Emit(serverError, errorResponse(serverError, "Not in any Room"))
 			}
 		})
