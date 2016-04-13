@@ -118,7 +118,6 @@ func QueuePlayers(g domain.Game, p domain.Player) {
 		data["message"] = "Already in queue"
 		p.Comm.Emit(clientError, r)
 	}
-	fmt.Println(pq.Size())
 }
 
 // GroupPlayers creates groups of players of size PlayerSize as defined in the
