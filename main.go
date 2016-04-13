@@ -169,15 +169,20 @@ func GroupPlayers(g domain.Game, server *socketio.Server, gi *GamesInfo) {
 	}
 }
 
+// Custom server is used to add cross-origin request capabilities to the socket
+// server. It wraps the socketio.Server
+type customServer struct {
+	Server *socketio.Server
+}
+
+// ServeHTTP is implemented to add the needed header for CORS in socketio.
+// This must be named ServeHTTP and take the
+// (http.ResponseWriter, r *http.Request) to satisfy the http.Handler interface
 func (s customServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	origin := r.Header.Get("Origin")
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	s.Server.ServeHTTP(w, r)
-}
-
-type customServer struct {
-	Server *socketio.Server
 }
 
 // StartServer ...
