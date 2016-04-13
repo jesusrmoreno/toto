@@ -2,6 +2,8 @@ package utils
 
 import "sync"
 
+// All ConcurrentMaps should follow the Set / Get / Remove interface
+
 // ConcurrentStringMap ...
 type ConcurrentStringMap struct {
 	data map[string]string
