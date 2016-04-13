@@ -238,6 +238,7 @@ func StartServer(c *cli.Context) {
 		})
 		so.On(makeMove, func(move json.RawMessage) {
 			room, exists := info.RoomMap.Get(so.Id())
+			log.Println(string(move))
 			if exists {
 				m := map[string]interface{}{}
 				if err := json.Unmarshal(move, &m); err != nil {
