@@ -54,6 +54,20 @@ func (l *Lobby) Contains(id string) bool {
 	return exists
 }
 
+// Remove ...
+func (l *Lobby) Remove(id string) {
+	l.Protect.Lock()
+	defer l.Protect.Unlock()
+
+	b := l.data[:0]
+	for _, x := range l.data {
+		if x.Comm.Id() != id {
+			b = append(b, x)
+		}
+	}
+	l.data = b
+}
+
 // Game contains all of our registered game information
 type Game struct {
 	FileName string `toml:"-"`

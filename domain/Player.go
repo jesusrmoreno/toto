@@ -5,6 +5,10 @@ type Player struct {
 	Comm Comm
 }
 
+func (p Player) String() string {
+	return p.Comm.Id()
+}
+
 // Comm provides an interface to communicate with the Player
 type Comm interface {
 	// Id returns the session id of socket.

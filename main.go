@@ -116,7 +116,7 @@ func QueuePlayers(g domain.Game, p domain.Player) {
 		p.Comm.Emit(inQueue, r)
 	} else {
 		data["message"] = "Already in queue"
-		p.Comm.Emit(inQueue, r)
+		p.Comm.Emit(clientError, r)
 	}
 	fmt.Println(pq.Size())
 }
@@ -124,48 +124,46 @@ func QueuePlayers(g domain.Game, p domain.Player) {
 // GroupPlayers creates groups of players of size PlayerSize as defined in the
 // game files.
 func GroupPlayers(g domain.Game, server *socketio.Server, gi *GamesInfo) {
+	log.Println("Attempting to group players")
 	pq := g.Lobby
 	n := g.Players
-	for {
-		select {
-		default:
-			if g.Lobby.Size() >= n {
-				team := []domain.Player{}
-				// Generate a room id
-				roomName := squid.GenerateSimpleID()
-				for i := 0; i < n; i++ {
-					p := pq.PopFromQueue()
-					pID := p.Comm.Id()
-					team = append(team, p)
+	if g.Lobby.Size() >= n {
+		team := []domain.Player{}
+		// Generate a room id
+		roomName := squid.GenerateSimpleID()
+		for i := 0; i < n; i++ {
+			p := pq.PopFromQueue()
+			pID := p.Comm.Id()
+			team = append(team, p)
 
-					// Set the metadata
-					gi.RoomMap.Set(pID, roomName)
-					gi.TurnMap.Set(roomName+":"+pID, i)
+			// Set the metadata
+			gi.RoomMap.Set(pID, roomName)
+			gi.TurnMap.Set(roomName+":"+pID, i)
 
-					// Place the player in the created room.
-					p.Comm.Join(roomName)
+			// Place the player in the created room.
+			p.Comm.Join(roomName)
 
-					// Create the response
-					data := map[string]interface{}{}
-					data["roomName"] = roomName
-					data["turnNumber"] = i
-					r := Response{
-						Kind: inQueue,
-						Data: data,
-					}
-					p.Comm.Emit(groupAssignment, r)
-				}
-
-				// Create the response
-				data := map[string]interface{}{}
-				data["message"] = fmt.Sprintf("Welcome to %s", roomName)
-				r := Response{
-					Kind: roomMessage,
-					Data: data,
-				}
-				server.BroadcastTo(roomName, roomMessage, r)
+			// Create the response
+			data := map[string]interface{}{}
+			data["roomName"] = roomName
+			data["turnNumber"] = i
+			r := Response{
+				Kind: groupAssignment,
+				Data: data,
 			}
+			p.Comm.Emit(groupAssignment, r)
 		}
+		// Create the response
+		data := map[string]interface{}{}
+		data["message"] = fmt.Sprintf("Welcome to %s", roomName)
+		r := Response{
+			Kind: roomMessage,
+			Data: data,
+		}
+		server.BroadcastTo(roomName, roomMessage, r)
+		log.Println("Created room:", roomName, "for players", team)
+	} else {
+		log.Println("Not enough players in lobby to create group", pq.Size())
 	}
 }
 
@@ -179,7 +177,6 @@ type customServer struct {
 // This must be named ServeHTTP and take the
 // (http.ResponseWriter, r *http.Request) to satisfy the http.Handler interface
 func (s customServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.RemoteAddr)
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	origin := r.Header.Get("Origin")
 	w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -206,9 +203,7 @@ func StartServer(c *cli.Context) {
 		RoomMap: utils.NewConcurrentStringMap(),
 		TurnMap: utils.NewConcurrentStringIntMap(),
 	}
-	for key := range games {
-		go GroupPlayers(games[key], server, &info)
-	}
+
 	server.On("connection", func(so socketio.Socket) {
 		// Makes it so that the player joins a room with his/her unique id.
 		so.Join(so.Id())
@@ -228,12 +223,23 @@ func StartServer(c *cli.Context) {
 			// If the player attempts to connect to a game we first have to make
 			// sure that they are joining a game that is registered with our server.
 			if g, exists := games[gameID]; exists {
+				// First queue the player
 				QueuePlayers(g, domain.Player{
 					Comm: so,
 				})
+				// Then attempt to form a group based off of this.
+				GroupPlayers(g, server, &info)
 			} else {
 				log.Println("Invalid GameId from", so.Id())
 				so.Emit(clientError, errorResponse(clientError, "Invalid GameID"))
+			}
+		})
+		so.On("disconnection", func() {
+			// This is really really bad unfuture proof, slow code.
+			// Please Refactor me
+			for key := range games {
+				g := games[key]
+				g.Lobby.Remove(so.Id())
 			}
 		})
 		so.On(makeMove, func(move json.RawMessage) {
