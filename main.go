@@ -241,7 +241,7 @@ func StartServer(c *cli.Context) {
 			if exists {
 				m := map[string]interface{}{}
 				if err := json.Unmarshal(move, &m); err != nil {
-					log.Println("Invalid JSON from", so.Id())
+					log.Println("Invalid JSON from", so.Id(), string(move))
 					so.Emit(clientError, errorResponse(clientError, "Invalid JSON"))
 				}
 				turn, exists := info.TurnMap.Get(room + ":" + so.Id())
