@@ -77,6 +77,3 @@ different client. This is broadcast to all members of the group.
 This is sent by the server when an error occurs that generates on the server.
 An example is attempting to join a gameID for which there is no json file
 defined.
-
-# Todo
-Handle disconnections
