@@ -5,14 +5,16 @@ import "sync"
 // GameMap serves as an in memory store of the different registered games
 type GameMap map[string]Game
 
-// Lobby implements the Lobby interface in the domain
+// Lobby is basically a FIFO queue that is threadsafe through the usage of mutex
+// it uses a slice as the data store and a string to bool map to keep of track
+// of items in the queue
 type Lobby struct {
 	Protect  *sync.RWMutex
 	data     []Player
 	contains map[string]bool
 }
 
-// NewLobby ...
+// NewLobby instantiates a new lobby (queue)
 func NewLobby() *Lobby {
 	return &Lobby{
 		Protect:  &sync.RWMutex{},
@@ -21,7 +23,7 @@ func NewLobby() *Lobby {
 	}
 }
 
-// AddToQueue ...
+// AddToQueue adds a player to the queue
 func (l *Lobby) AddToQueue(p Player) {
 	l.Protect.Lock()
 	defer l.Protect.Unlock()
@@ -29,7 +31,7 @@ func (l *Lobby) AddToQueue(p Player) {
 	l.contains[p.Comm.Id()] = true
 }
 
-// PopFromQueue ....
+// PopFromQueue returns a player from the queue: FIFO
 func (l *Lobby) PopFromQueue() Player {
 	l.Protect.Lock()
 	defer l.Protect.Unlock()
@@ -39,14 +41,14 @@ func (l *Lobby) PopFromQueue() Player {
 	return item
 }
 
-// Size ...
+// Size returns the number of items in the q
 func (l *Lobby) Size() int {
 	l.Protect.Lock()
 	defer l.Protect.Unlock()
 	return len(l.data)
 }
 
-// Contains ...
+// Contains returns true if the q contains the player with the given id
 func (l *Lobby) Contains(id string) bool {
 	l.Protect.Lock()
 	defer l.Protect.Unlock()
@@ -54,7 +56,7 @@ func (l *Lobby) Contains(id string) bool {
 	return exists
 }
 
-// Remove ...
+// Remove removes the player with the specified id
 func (l *Lobby) Remove(id string) {
 	l.Protect.Lock()
 	defer l.Protect.Unlock()
