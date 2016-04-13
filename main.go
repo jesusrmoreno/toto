@@ -194,16 +194,13 @@ func StartServer(c *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	server, err := socketio.NewServer(nil)
 	s := customServer{
 		Server: server,
 	}
-
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	info := GamesInfo{
 		RoomMap: utils.NewConcurrentStringMap(),
 		TurnMap: utils.NewConcurrentStringIntMap(),
