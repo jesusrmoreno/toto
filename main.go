@@ -179,6 +179,7 @@ type customServer struct {
 // This must be named ServeHTTP and take the
 // (http.ResponseWriter, r *http.Request) to satisfy the http.Handler interface
 func (s customServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Println(r.RemoteAddr)
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	origin := r.Header.Get("Origin")
 	w.Header().Set("Access-Control-Allow-Origin", origin)
