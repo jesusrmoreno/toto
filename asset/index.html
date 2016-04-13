@@ -49,9 +49,8 @@
       socket.on('room-message', function(msg) {
         $('#messages').append($('<li>').text(msg));
       })
-      socket.on('group-found', function(name) {
+      socket.on('group-assignment', function(name) {
         game = name;
-
         console.log("Joined room", name)
       })
       socket.on('error', function(err) {

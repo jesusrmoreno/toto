@@ -1,7 +1,7 @@
 package impl
 
 import (
-	"github.com/jesusrmoreno/toto/domain"
+	"github.com/tiltfactor/toto/domain"
 )
 
 // Lobby implements the Lobby interface in the domain

@@ -12,9 +12,8 @@ import (
 
 	"github.com/googollee/go-socket.io"
 
-	"github.com/jesusrmoreno/toto/domain"
-	"github.com/jesusrmoreno/toto/implementations"
-	"github.com/jesusrmoreno/toto/utils"
+	"github.com/tiltfactor/toto/domain"
+	"github.com/tiltfactor/toto/utils"
 
 	"github.com/BurntSushi/toml"
 	"github.com/jesusrmoreno/sad-squid"
@@ -91,12 +90,7 @@ func ReadGameFiles(gameDir string) (domain.GameMap, error) {
 			Players: dummy.Players,
 			Title:   dummy.Title,
 			UUID:    dummy.UUID,
-			Lobby: impl.Lobby{
-				// We implement our lobby as a buffered channel that takes the number of
-				// players specified in the config file for the game and makes that the
-				// cap.
-				Queue: make(chan domain.Player, dummy.Players),
-			},
+			Lobby:   domain.NewLobby(),
 		}
 		g.FileName = f
 		if _, exists := gm[g.UUID]; exists {
@@ -116,9 +110,15 @@ func QueuePlayers(g domain.Game, p domain.Player) {
 		Kind: inQueue,
 		Data: data,
 	}
-	p.Comm.Emit(inQueue, r)
 	pq := g.Lobby
-	pq.AddToQueue(p)
+	if !pq.Contains(p.Comm.Id()) {
+		pq.AddToQueue(p)
+		p.Comm.Emit(inQueue, r)
+	} else {
+		data["message"] = "Already in queue"
+		p.Comm.Emit(inQueue, r)
+	}
+	fmt.Println(pq.Size())
 }
 
 // GroupPlayers creates groups of players of size PlayerSize as defined in the
