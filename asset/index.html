@@ -53,7 +53,7 @@
         game = name;
         console.log("Joined room", name)
       })
-      socket.on('error', function(err) {
+      socket.on('client-error', function(err) {
         alert(err)
       })
     </script>
