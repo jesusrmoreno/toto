@@ -216,7 +216,7 @@ func StartServer(c *cli.Context) {
 			}
 			gameID, exists := m["gameId"]
 			if !exists {
-				log.Println("No game id from", so.Id())
+				log.Println("No game included from", so.Id())
 				so.Emit(clientError, errorResponse(clientError, "Must include GameID"))
 			}
 			log.Println(so.Id(), "attempted to join game", gameID)
