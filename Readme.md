@@ -41,13 +41,16 @@ players defined in playersInGroup are on the queue. When that happens a unique
 room id will be generated and the assigned-room is emitted to the player with
 the room name.
 
+### player-disconnect
+Will be sent in the event of a player disconnecting from the group. The player's
+turn will be included.
+
 ### in-queue
 Sent when the player first gets added to the game queue.
 
-### join-group
-Should be used by the player to join an existing group. A player can only join
-an existing group if doing so will not cause the playersInGroup limit to be
-exceeded.
+### group-assignment
+Sends the player the room name and turn assigned. The client should use this to
+initialize the client turn and room name.
 
 ### room-message
 Is sent to everyone in the room. The client should subscribe to this to get info

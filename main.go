@@ -22,19 +22,20 @@ import (
 )
 
 // Version ...
-var Version = "1.3.2"
+var Version = "1.3.3"
 
 // Events that are exposed to the client
 const (
-	groupAssignment = "group-assignment"
-	roomMessage     = "room-message"
-	leaveGroup      = "leave-group"
-	joinGroup       = "join-group"
-	joinGame        = "join-game"
-	getPeers        = "get-peers"
-	makeMove        = "make-move"
-	moveMade        = "move-made"
-	inQueue         = "in-queue"
+	connection       = "connection"
+	disconnection    = "disconnection"
+	playerDisconnect = "player-disconnect"
+	groupAssignment  = "group-assignment"
+	roomMessage      = "room-message"
+	joinGroup        = "join-group"
+	joinGame         = "join-game"
+	makeMove         = "make-move"
+	moveMade         = "move-made"
+	inQueue          = "in-queue"
 
 	serverError = "server-error"
 	clientError = "client-error"
@@ -247,7 +248,7 @@ func StartServer(c *cli.Context) {
 		TurnMap: utils.NewConcurrentStringIntMap(),
 	}
 
-	server.On("connection", func(so socketio.Socket) {
+	server.On(connection, func(so socketio.Socket) {
 		log.Println("Connection from", so.Id())
 
 		// Makes it so that the player joins a room with his/her unique id.
@@ -256,14 +257,28 @@ func StartServer(c *cli.Context) {
 			handlePlayerJoin(so, r, games, info)
 		})
 
-		so.On("disconnection", func() {
+		so.On(disconnection, func() {
 			// This is really really bad unfuture proof, slow code.
 			// Please Refactor me
 			for key := range games {
 				g := games[key]
 				g.Lobby.Remove(so.Id())
 			}
+
+			r, ok := info.RoomMap.Get(so.Id())
+			if !ok {
+				log.Println("Tried to get room for non existent player")
+			}
+			t, ok := info.TurnMap.Get(so.Id())
+			if !ok {
+				log.Println("Tried to get turn for non existent player")
+			}
+
+			m := map[string]interface{}{}
+			m["player"] = t
+			server.BroadcastTo(r, playerDisconnect, wrapResponse(playerDisconnect, m))
 		})
+
 		so.On(makeMove, func(move json.RawMessage) {
 			room, exists := info.RoomMap.Get(so.Id())
 			log.Println(string(move))
