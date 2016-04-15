@@ -8,8 +8,22 @@ will check all relayed messages.
 # Installing
 ```bash
 go get github.com/tiltfactor/toto
-toto --port 8080
 ```
+
+# Running
+```bash
+# To run on port 8080
+toto --port 8080
+
+# To run on default port (3000)
+toto
+```
+
+# Upgrading
+```bash
+go get -u github.com/tiltfactor/toto
+```
+
 
 # How
 First a game definition must be created and placed in a folder called _games_ in
