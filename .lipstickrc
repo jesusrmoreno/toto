@@ -1,5 +1,6 @@
 [commitKinds]
 format = ":art:"
+refactor = ":hocho:"
 performance = ":racehorse:"
 docs = ":books:"
 bugfix = ":bug:"
