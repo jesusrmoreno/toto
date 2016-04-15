@@ -1,5 +1,5 @@
-# Toto
-:video_game: __Toto__ is a game server for creating quick prototypes of websocket based
+# Toto :video_game:
+__Toto__ is a game server for creating quick prototypes of websocket based
 games. By exposing a few key events Toto makes it easy to start making
 multiplayer games. Toto serves as a relay point for communication between
 clients. It does not handle any of the game logic and expects that the clients
