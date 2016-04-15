@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -94,7 +93,8 @@ func ReadGameFiles(gameDir string) (domain.GameMap, error) {
 		}
 		g.FileName = f
 		if _, exists := gm[g.UUID]; exists {
-			return nil, errors.New("uniqueKey conflict between: " + f + " and " + gm[g.UUID].FileName)
+			return nil, errors.New("uniqueKey conflict between: " + f + " and " +
+				gm[g.UUID].FileName)
 		}
 		gm[g.UUID] = g
 	}
@@ -121,7 +121,7 @@ func QueuePlayers(g domain.Game, p domain.Player) bool {
 // game files. It also sets the player turns.
 // It returns the name of the room and true if it succeeded or
 // an empty string and false if it did not.
-func GroupPlayers(g domain.Game, gi *GamesInfo) (string, bool) {
+func GroupPlayers(g domain.Game, gi *GamesInfo) (string, []domain.Player) {
 	log.Println("Attempting to group players for game", g.UUID)
 	pq := g.Lobby
 	needed := g.Players
@@ -145,54 +145,13 @@ func GroupPlayers(g domain.Game, gi *GamesInfo) (string, bool) {
 			tk := turnKey(playerID, roomName)
 			gi.TurnMap.Set(tk, i)
 		}
-		return roomName, true
+		return roomName, team
 	}
-	return "", false
+	return "", nil
 }
 
-func OldGroupPlayers(g domain.Game, server *socketio.Server, gi *GamesInfo) {
-	log.Println("Attempting to group players")
-	pq := g.Lobby
-	n := g.Players
-	if g.Lobby.Size() >= n {
-		team := []domain.Player{}
-		// Generate a room id
-		roomName := squid.GenerateSimpleID()
-		for i := 0; i < n; i++ {
-			p := pq.PopFromQueue()
-			pID := p.Comm.Id()
-			team = append(team, p)
-
-			// Set the metadata
-			gi.RoomMap.Set(pID, roomName)
-			gi.TurnMap.Set(roomName+":"+pID, i)
-
-			// Create the response
-			data := map[string]interface{}{}
-			data["roomName"] = roomName
-			data["turnNumber"] = i
-			r := Response{
-				Kind: groupAssignment,
-				Data: data,
-			}
-			p.Comm.Emit(groupAssignment, r)
-		}
-		// Create the response
-		data := map[string]interface{}{}
-		data["message"] = fmt.Sprintf("Welcome to %s", roomName)
-		r := Response{
-			Kind: roomMessage,
-			Data: data,
-		}
-		server.BroadcastTo(roomName, roomMessage, r)
-		log.Println("Created room:", roomName, "for players", team)
-	} else {
-		log.Println("Not enough players in lobby to create group", pq.Size())
-	}
-}
-
-// Cross origin server is used to add cross-origin request capabilities to the socket
-// server. It wraps the socketio.Server
+// Cross origin server is used to add cross-origin request capabilities to the
+// socket server. It wraps the socketio.Server
 type crossOriginServer struct {
 	Server *socketio.Server
 }
@@ -205,6 +164,67 @@ func (s crossOriginServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	s.Server.ServeHTTP(w, r)
+}
+
+func handlePlayerJoin(so socketio.Socket, req json.RawMessage,
+	games domain.GameMap, info GamesInfo) {
+	m := map[string]string{}
+	if err := json.Unmarshal(req, &m); err != nil {
+		log.Println("Invalid JSON from", so.Id())
+		so.Emit(clientError, errorResponse(clientError, "Invalid JSON"))
+	}
+	gameID, exists := m["gameId"]
+	if !exists {
+		log.Println("No game included from", so.Id())
+		so.Emit(clientError, errorResponse(clientError, "Must include GameID"))
+	}
+
+	log.Println(so.Id(), "attempting to join game", gameID)
+	// If the player attempts to connect to a game we first have to make
+	// sure that they are joining a game that is registered with our server.
+	if g, exists := games[gameID]; exists {
+		// First queue the player
+		newPlayer := domain.Player{
+			Comm: so,
+		}
+		if didQueue := QueuePlayers(g, newPlayer); didQueue {
+			// Create the response we're going to send
+			data := map[string]interface{}{}
+			r := Response{
+				Kind: inQueue,
+				Data: data,
+			}
+			data["message"] = "You are in the queue for game: " + g.Title
+			so.Emit(inQueue, r)
+			if rn, group := GroupPlayers(g, &info); group != nil && rn != "" {
+				// Tell each member what their room name is as well as their turn
+				for i, p := range group {
+					data := map[string]interface{}{}
+					data["roomName"] = rn
+					r := Response{
+						Kind: groupAssignment,
+						Data: data,
+					}
+					data["turnNumber"] = i
+					p.Comm.Emit(groupAssignment, r)
+				}
+			}
+		} else {
+			// Create the response we're going to send
+			data := map[string]interface{}{}
+			r := Response{
+				Kind: inQueue,
+				Data: data,
+			}
+			data["message"] = "Already in queue"
+			so.Emit(clientError, r)
+		}
+		// Then attempt to form a group based off of this.
+
+	} else {
+		log.Println("Invalid GameId from", so.Id())
+		so.Emit(clientError, errorResponse(clientError, "Invalid GameID"))
+	}
 }
 
 // StartServer ...
@@ -229,48 +249,14 @@ func StartServer(c *cli.Context) {
 	}
 
 	server.On("connection", func(so socketio.Socket) {
+		log.Println("Connection from", so.Id())
+
 		// Makes it so that the player joins a room with his/her unique id.
 		so.Join(so.Id())
-		log.Println("Connection from", so.Id())
-		so.On(joinGame, func(req json.RawMessage) {
-			m := map[string]string{}
-			if err := json.Unmarshal(req, &m); err != nil {
-				log.Println("Invalid JSON from", so.Id())
-				so.Emit(clientError, errorResponse(clientError, "Invalid JSON"))
-			}
-			gameID, exists := m["gameId"]
-			if !exists {
-				log.Println("No game included from", so.Id())
-				so.Emit(clientError, errorResponse(clientError, "Must include GameID"))
-			}
-			log.Println(so.Id(), "attempted to join game", gameID)
-			// If the player attempts to connect to a game we first have to make
-			// sure that they are joining a game that is registered with our server.
-			if g, exists := games[gameID]; exists {
-				// First queue the player
-				didQueue := QueuePlayers(g, domain.Player{
-					Comm: so,
-				})
-				data := map[string]interface{}{}
-				r := Response{
-					Kind: inQueue,
-					Data: data,
-				}
-				if didQueue {
-					data["message"] = "You are in the queue for game: " + g.Title
-					so.Emit(inQueue, r)
-					// GroupPlayers(g, server, &info)
-				} else {
-					data["message"] = "Already in queue"
-					so.Emit(clientError, r)
-				}
-				// Then attempt to form a group based off of this.
-
-			} else {
-				log.Println("Invalid GameId from", so.Id())
-				so.Emit(clientError, errorResponse(clientError, "Invalid GameID"))
-			}
+		so.On(joinGame, func(r json.RawMessage) {
+			handlePlayerJoin(so, r, games, info)
 		})
+
 		so.On("disconnection", func() {
 			// This is really really bad unfuture proof, slow code.
 			// Please Refactor me
