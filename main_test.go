@@ -66,3 +66,41 @@ func TestQueuePlayers(t *testing.T) {
 		})
 	})
 }
+
+//
+// func TestGroupPlayers(t *testing.T) {
+// 	Convey("Players should be grouped", t, func() {
+// 		Convey("When the min number of players is available", func() {
+// 			g := domain.Game{
+// 				MinPlayers: 2
+// 				Lobby: domain.NewLobby(),
+// 			}
+// 			p := domain.Player{
+// 				Comm: testComm{
+// 					ID: "testID",
+// 				},
+// 			}
+// 			p2 := domain.Player{
+// 				Comm: testComm{
+// 					ID: "testID2",
+// 				},
+// 			}
+// 			QueuePlayers(g, p)
+// 			QueuePlayers(g, p2)
+// 			So(GroupPlayers(g, gi *GamesInfo))
+// 			So(QueuePlayers(g, p), ShouldBeTrue)
+// 		})
+// 		Convey("But not when they are already in the queue", func() {
+// 			g := domain.Game{
+// 				Lobby: domain.NewLobby(),
+// 			}
+// 			p := domain.Player{
+// 				Comm: testComm{
+// 					ID: "testID",
+// 				},
+// 			}
+// 			QueuePlayers(g, p)
+// 			So(QueuePlayers(g, p), ShouldBeFalse)
+// 		})
+// 	})
+// }

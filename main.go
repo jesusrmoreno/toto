@@ -98,11 +98,15 @@ func ReadGameFiles(gameDir string) (domain.GameMap, error) {
 			log.Println(meta)
 			return nil, errors.New("Invalid configuration in file: " + f)
 		}
+		if dummy.MinPlayers == 0 {
+			return nil, errors.New("Invalid configuration in file: must provide minPlayers" + f)
+		}
 		g := domain.Game{
-			Players: dummy.Players,
-			Title:   dummy.Title,
-			UUID:    dummy.UUID,
-			Lobby:   domain.NewLobby(),
+			MinPlayers: dummy.MinPlayers,
+			MaxPlayers: dummy.MaxPlayers,
+			Title:      dummy.Title,
+			UUID:       dummy.UUID,
+			Lobby:      domain.NewLobby(),
 		}
 		g.FileName = f
 		if _, exists := gm[g.UUID]; exists {
@@ -137,28 +141,34 @@ func QueuePlayers(g domain.Game, p domain.Player) bool {
 func GroupPlayers(g domain.Game, gi *GamesInfo) (string, []domain.Player) {
 	log.Println("Attempting to group players for game", g.UUID)
 	pq := g.Lobby
-	needed := g.Players
+	max := g.MaxPlayers
+	min := g.MinPlayers
+	if max == 0 {
+		max = min
+	}
 	available := pq.Size()
-	if available >= needed {
-		team := []domain.Player{}
-		roomName := squid.GenerateSimpleID()
-		for i := 0; i < needed; i++ {
-			p := pq.PopFromQueue()
-			team = append(team, p)
+	for needed := max; needed >= min; needed-- {
+		if available >= max {
+			team := []domain.Player{}
+			roomName := squid.GenerateSimpleID()
+			for i := 0; i < needed; i++ {
+				p := pq.PopFromQueue()
+				team = append(team, p)
 
-			// Place the player in the created room.
-			p.Comm.Join(roomName)
+				// Place the player in the created room.
+				p.Comm.Join(roomName)
 
-			playerID := p.Comm.Id()
-			gi.RoomMap.Set(playerID, roomName)
+				playerID := p.Comm.Id()
+				gi.RoomMap.Set(playerID, roomName)
 
-			// We generate a turn key composed of the room name and player id to store
-			// the turn. turns are assigned based off of how they are popped from the
-			// queue.
-			tk := turnKey(playerID, roomName)
-			gi.TurnMap.Set(tk, i)
+				// We generate a turn key composed of the room name and player id to store
+				// the turn. turns are assigned based off of how they are popped from the
+				// queue.
+				tk := turnKey(playerID, roomName)
+				gi.TurnMap.Set(tk, i)
+			}
+			return roomName, team
 		}
-		return roomName, team
 	}
 	return "", nil
 }
