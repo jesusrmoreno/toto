@@ -198,36 +198,24 @@ func handlePlayerJoin(so socketio.Socket, req json.RawMessage,
 		if didQueue := QueuePlayers(g, newPlayer); didQueue {
 			// Create the response we're going to send
 			data := map[string]interface{}{}
-			r := Response{
-				Timestamp: timestamp(),
-				Kind:      inQueue,
-				Data:      data,
-			}
 			data["message"] = "You are in the queue for game: " + g.Title
+			r := wrapResponse(inQueue, data)
 			so.Emit(inQueue, r)
 			if rn, group := GroupPlayers(g, &info); group != nil && rn != "" {
 				// Tell each member what their room name is as well as their turn
 				for i, p := range group {
 					data := map[string]interface{}{}
 					data["roomName"] = rn
-					r := Response{
-						Timestamp: timestamp(),
-						Kind:      groupAssignment,
-						Data:      data,
-					}
 					data["turnNumber"] = i
+					r := wrapResponse(groupAssignment, data)
 					p.Comm.Emit(groupAssignment, r)
 				}
 			}
 		} else {
 			// Create the response we're going to send
 			data := map[string]interface{}{}
-			r := Response{
-				Timestamp: timestamp(),
-				Kind:      inQueue,
-				Data:      data,
-			}
 			data["message"] = "Already in queue"
+			r := wrapResponse(clientError, data)
 			so.Emit(clientError, r)
 		}
 		// Then attempt to form a group based off of this.
@@ -293,11 +281,7 @@ func StartServer(c *cli.Context) {
 				// Overwrites who's turn it is using the turn map assigned at join.
 				m["madeBy"] = turn
 				m["madeById"] = so.Id()
-				r := Response{
-					Timestamp: timestamp(),
-					Kind:      moveMade,
-					Data:      m,
-				}
+				r := wrapResponse(moveMade, m)
 				log.Println(r)
 				so.BroadcastTo(room, moveMade, r)
 			} else {
@@ -313,6 +297,14 @@ func StartServer(c *cli.Context) {
 	http.Handle("/", http.FileServer(http.Dir("./asset")))
 	log.Println("Serving at localhost:" + port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
+}
+
+func wrapResponse(kind string, data map[string]interface{}) Response {
+	return Response{
+		Timestamp: timestamp(),
+		Kind:      kind,
+		Data:      data,
+	}
 }
 
 func main() {
