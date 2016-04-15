@@ -47,12 +47,17 @@ type Response struct {
 	Data      map[string]interface{} `json:"data"`
 }
 
+// timestamp returns the current timestamp
+func timestamp() int64 {
+	return time.Now().UnixNano()
+}
+
 // Method for creating errors more quickly.
 func errorResponse(kind, err string) Response {
 	d := map[string]interface{}{}
 	d["error"] = err
 	r := Response{
-		Timestamp: time.Now().UnixNano(),
+		Timestamp: timestamp(),
 		Kind:      kind,
 		Data:      d,
 	}
@@ -194,7 +199,7 @@ func handlePlayerJoin(so socketio.Socket, req json.RawMessage,
 			// Create the response we're going to send
 			data := map[string]interface{}{}
 			r := Response{
-				Timestamp: time.Now().UnixNano(),
+				Timestamp: timestamp(),
 				Kind:      inQueue,
 				Data:      data,
 			}
@@ -206,7 +211,7 @@ func handlePlayerJoin(so socketio.Socket, req json.RawMessage,
 					data := map[string]interface{}{}
 					data["roomName"] = rn
 					r := Response{
-						Timestamp: time.Now().UnixNano(),
+						Timestamp: timestamp(),
 						Kind:      groupAssignment,
 						Data:      data,
 					}
@@ -218,7 +223,7 @@ func handlePlayerJoin(so socketio.Socket, req json.RawMessage,
 			// Create the response we're going to send
 			data := map[string]interface{}{}
 			r := Response{
-				Timestamp: time.Now().UnixNano(),
+				Timestamp: timestamp(),
 				Kind:      inQueue,
 				Data:      data,
 			}
@@ -289,7 +294,7 @@ func StartServer(c *cli.Context) {
 				m["madeBy"] = turn
 				m["madeById"] = so.Id()
 				r := Response{
-					Timestamp: time.Now().UnixNano(),
+					Timestamp: timestamp(),
 					Kind:      moveMade,
 					Data:      m,
 				}
