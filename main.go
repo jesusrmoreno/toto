@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/googollee/go-socket.io"
 
@@ -21,7 +22,7 @@ import (
 )
 
 // Version ...
-var Version = "1.3.0"
+var Version = "1.3.2"
 
 // Events that are exposed to the client
 const (
@@ -41,8 +42,9 @@ const (
 
 // Response ...
 type Response struct {
-	Kind string                 `json:"kind"`
-	Data map[string]interface{} `json:"data"`
+	Timestamp int64                  `json:"timeStamp"`
+	Kind      string                 `json:"kind"`
+	Data      map[string]interface{} `json:"data"`
 }
 
 // Method for creating errors more quickly.
@@ -50,8 +52,9 @@ func errorResponse(kind, err string) Response {
 	d := map[string]interface{}{}
 	d["error"] = err
 	r := Response{
-		Kind: kind,
-		Data: d,
+		Timestamp: time.Now().UnixNano(),
+		Kind:      kind,
+		Data:      d,
 	}
 	return r
 }
@@ -191,8 +194,9 @@ func handlePlayerJoin(so socketio.Socket, req json.RawMessage,
 			// Create the response we're going to send
 			data := map[string]interface{}{}
 			r := Response{
-				Kind: inQueue,
-				Data: data,
+				Timestamp: time.Now().UnixNano(),
+				Kind:      inQueue,
+				Data:      data,
 			}
 			data["message"] = "You are in the queue for game: " + g.Title
 			so.Emit(inQueue, r)
@@ -202,8 +206,9 @@ func handlePlayerJoin(so socketio.Socket, req json.RawMessage,
 					data := map[string]interface{}{}
 					data["roomName"] = rn
 					r := Response{
-						Kind: groupAssignment,
-						Data: data,
+						Timestamp: time.Now().UnixNano(),
+						Kind:      groupAssignment,
+						Data:      data,
 					}
 					data["turnNumber"] = i
 					p.Comm.Emit(groupAssignment, r)
@@ -213,8 +218,9 @@ func handlePlayerJoin(so socketio.Socket, req json.RawMessage,
 			// Create the response we're going to send
 			data := map[string]interface{}{}
 			r := Response{
-				Kind: inQueue,
-				Data: data,
+				Timestamp: time.Now().UnixNano(),
+				Kind:      inQueue,
+				Data:      data,
 			}
 			data["message"] = "Already in queue"
 			so.Emit(clientError, r)
@@ -283,8 +289,9 @@ func StartServer(c *cli.Context) {
 				m["madeBy"] = turn
 				m["madeById"] = so.Id()
 				r := Response{
-					Kind: moveMade,
-					Data: m,
+					Timestamp: time.Now().UnixNano(),
+					Kind:      moveMade,
+					Data:      m,
 				}
 				log.Println(r)
 				so.BroadcastTo(room, moveMade, r)
