@@ -101,28 +101,56 @@ func ReadGameFiles(gameDir string) (domain.GameMap, error) {
 	return gm, nil
 }
 
+// turnKey returns the generated key for storing turns
+func turnKey(playerID, roomName string) string {
+	return roomName + ":" + playerID
+}
+
 // QueuePlayers adds players to the game's lobby to wait for a partner.
 // Players are queued on a first come first serve basis.
-func QueuePlayers(g domain.Game, p domain.Player) {
-	data := map[string]interface{}{}
-	data["message"] = "You are in the queue for game: " + g.Title
-	r := Response{
-		Kind: inQueue,
-		Data: data,
-	}
+func QueuePlayers(g domain.Game, p domain.Player) bool {
 	pq := g.Lobby
 	if !pq.Contains(p.Comm.Id()) {
 		pq.AddToQueue(p)
-		p.Comm.Emit(inQueue, r)
-	} else {
-		data["message"] = "Already in queue"
-		p.Comm.Emit(clientError, r)
+		return true
 	}
+	return false
 }
 
-// GroupPlayers creates groups of players of size PlayerSize as defined in the
-// game files.
-func GroupPlayers(g domain.Game, server *socketio.Server, gi *GamesInfo) {
+// GroupPlayers attempts to creates groups of players of the size defined in the
+// game files. It also sets the player turns.
+// It returns the name of the room and true if it succeeded or
+// an empty string and false if it did not.
+func GroupPlayers(g domain.Game, gi *GamesInfo) (string, bool) {
+	log.Println("Attempting to group players for game", g.UUID)
+	pq := g.Lobby
+	needed := g.Players
+	available := pq.Size()
+	if available >= needed {
+		team := []domain.Player{}
+		roomName := squid.GenerateSimpleID()
+		for i := 0; i < needed; i++ {
+			p := pq.PopFromQueue()
+			team = append(team, p)
+
+			// Place the player in the created room.
+			p.Comm.Join(roomName)
+
+			playerID := p.Comm.Id()
+			gi.RoomMap.Set(playerID, roomName)
+
+			// We generate a turn key composed of the room name and player id to store
+			// the turn. turns are assigned based off of how they are popped from the
+			// queue.
+			tk := turnKey(playerID, roomName)
+			gi.TurnMap.Set(tk, i)
+		}
+		return roomName, true
+	}
+	return "", false
+}
+
+func OldGroupPlayers(g domain.Game, server *socketio.Server, gi *GamesInfo) {
 	log.Println("Attempting to group players")
 	pq := g.Lobby
 	n := g.Players
@@ -138,9 +166,6 @@ func GroupPlayers(g domain.Game, server *socketio.Server, gi *GamesInfo) {
 			// Set the metadata
 			gi.RoomMap.Set(pID, roomName)
 			gi.TurnMap.Set(roomName+":"+pID, i)
-
-			// Place the player in the created room.
-			p.Comm.Join(roomName)
 
 			// Create the response
 			data := map[string]interface{}{}
@@ -166,16 +191,16 @@ func GroupPlayers(g domain.Game, server *socketio.Server, gi *GamesInfo) {
 	}
 }
 
-// Custom server is used to add cross-origin request capabilities to the socket
+// Cross origin server is used to add cross-origin request capabilities to the socket
 // server. It wraps the socketio.Server
-type customServer struct {
+type crossOriginServer struct {
 	Server *socketio.Server
 }
 
 // ServeHTTP is implemented to add the needed header for CORS in socketio.
 // This must be named ServeHTTP and take the
 // (http.ResponseWriter, r *http.Request) to satisfy the http.Handler interface
-func (s customServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s crossOriginServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	origin := r.Header.Get("Origin")
 	w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -192,7 +217,7 @@ func StartServer(c *cli.Context) {
 		log.Fatal(err)
 	}
 	server, err := socketio.NewServer(nil)
-	s := customServer{
+	s := crossOriginServer{
 		Server: server,
 	}
 	if err != nil {
@@ -223,11 +248,24 @@ func StartServer(c *cli.Context) {
 			// sure that they are joining a game that is registered with our server.
 			if g, exists := games[gameID]; exists {
 				// First queue the player
-				QueuePlayers(g, domain.Player{
+				didQueue := QueuePlayers(g, domain.Player{
 					Comm: so,
 				})
+				data := map[string]interface{}{}
+				r := Response{
+					Kind: inQueue,
+					Data: data,
+				}
+				if didQueue {
+					data["message"] = "You are in the queue for game: " + g.Title
+					so.Emit(inQueue, r)
+					// GroupPlayers(g, server, &info)
+				} else {
+					data["message"] = "Already in queue"
+					so.Emit(clientError, r)
+				}
 				// Then attempt to form a group based off of this.
-				GroupPlayers(g, server, &info)
+
 			} else {
 				log.Println("Invalid GameId from", so.Id())
 				so.Emit(clientError, errorResponse(clientError, "Invalid GameID"))
