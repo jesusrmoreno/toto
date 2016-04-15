@@ -31,7 +31,10 @@ the directory where Toto is run. A game definition is written in TOML and
 looks like this:
 ```toml
 # The number of players required to create a group
-playersInGroup = 2
+minPlayers = 2
+
+# Optional maxPlayer
+maxPlayers = 2
 
 # The title that will be displayed should be displayed to the user
 displayTitle = "This is an example game!"
