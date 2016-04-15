@@ -78,6 +78,10 @@ type GamesInfo struct {
 // game map.
 func ReadGameFiles(gameDir string) (domain.GameMap, error) {
 	files, err := filepath.Glob(gameDir + "/*.toml")
+	if len(files) == 0 {
+		return nil, errors.New("Unable to find games. Does games directory exist?")
+	}
+
 	gm := domain.GameMap{}
 	if err != nil {
 		return nil, err
@@ -230,11 +234,11 @@ func handlePlayerJoin(so socketio.Socket, req json.RawMessage,
 // StartServer ...
 func StartServer(c *cli.Context) {
 	games, err := ReadGameFiles("./games")
-	for key, game := range games {
-		log.Println("Loaded:", key, "from", game.FileName)
-	}
 	if err != nil {
 		log.Fatal(err)
+	}
+	for key, game := range games {
+		log.Println("Loaded:", key, "from", game.FileName)
 	}
 	server, err := socketio.NewServer(nil)
 	s := crossOriginServer{
