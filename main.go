@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -18,8 +17,19 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/jesusrmoreno/sad-squid"
 
+	logrus "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 )
+
+var log *logrus.Logger
+
+func init() {
+	log = logrus.New()
+	log.Formatter = &logrus.TextFormatter{
+		FullTimestamp: true,
+	}
+	log.Level = logrus.DebugLevel
+}
 
 // Version ...
 var Version = "1.3.3"
@@ -76,7 +86,7 @@ func QueuePlayers(g domain.Game, p domain.Player) bool {
 // It returns the name of the room and true if it succeeded or
 // an empty string and false if it did not.
 func GroupPlayers(g domain.Game, gi *Control) (string, []domain.Player) {
-	log.Println("Attempting to group players for game", g.UUID)
+	log.Debug("Attempting to group players for game", g.UUID)
 	pq := g.Lobby
 	max := g.MaxPlayers
 	min := g.MinPlayers
@@ -137,10 +147,10 @@ func HandlePlayerJoin(so socketio.Socket, r GameJoinRequest,
 	games domain.GameMap, info Control) {
 	gameID := r.GameID
 	if gameID == "" {
-		log.Println("No game included from", so.Id())
+		log.Debug("No game included from", so.Id())
 		so.Emit(clientError, ErrorResponse(clientError, "Must include GameID"))
 	}
-	log.Println(so.Id(), "attempting to join game", gameID)
+	log.Debug(so.Id(), "attempting to join game", gameID)
 	// If the player attempts to connect to a game we first have to make
 	// sure that they are joining a game that is registered with our server.
 	if g, exists := games[gameID]; exists {
@@ -176,7 +186,7 @@ func HandlePlayerJoin(so socketio.Socket, r GameJoinRequest,
 			so.Emit(clientError, r)
 		}
 	} else {
-		log.Println("Invalid GameId from", so.Id())
+		log.Debug("Invalid GameId from", so.Id())
 		so.Emit(clientError, ErrorResponse(clientError, "Invalid GameID"))
 	}
 }
@@ -206,7 +216,7 @@ func StartServer(c *cli.Context) {
 	}
 
 	server.On(connection, func(so socketio.Socket) {
-		log.Println("Connection from", so.Id())
+		log.Debug("Connection from", so.Id())
 
 		// Makes it so that the player joins a room with his/her unique id.
 		so.Join(so.Id())
@@ -241,12 +251,12 @@ func StartServer(c *cli.Context) {
 			if exists {
 				m := map[string]interface{}{}
 				if err := json.Unmarshal(move, &m); err != nil {
-					log.Println("Invalid JSON from", so.Id(), string(move))
+					log.Debug("Invalid JSON from", so.Id(), string(move))
 					so.Emit(clientError, ErrorResponse(clientError, "Invalid JSON"))
 				}
 				turn, exists := info.TurnMap.Get(room + ":" + so.Id())
 				if !exists {
-					log.Println("No turn assigned", so.Id())
+					log.Debug("No turn assigned", so.Id())
 					so.Emit(serverError, ErrorResponse(serverError, "No turn assigned"))
 				}
 				// Overwrites who's turn it is using the turn map assigned at join.
@@ -256,7 +266,7 @@ func StartServer(c *cli.Context) {
 				log.Println(r)
 				server.BroadcastTo(room, moveMade, r)
 			} else {
-				log.Println("No room assigned for", so.Id())
+				log.Debug("No room assigned for", so.Id())
 				so.Emit(serverError, ErrorResponse(serverError, "Not in any Room"))
 			}
 		})
@@ -311,7 +321,7 @@ func ReadGameFiles(gameDir string) (domain.GameMap, error) {
 		r := io.Reader(raw)
 		dummy := domain.Game{}
 		if meta, err := toml.DecodeReader(r, &dummy); err != nil {
-			log.Println(meta)
+			log.Error(meta)
 			return nil, errors.New("Invalid configuration in file: " + f)
 		}
 		if dummy.MinPlayers == 0 {
