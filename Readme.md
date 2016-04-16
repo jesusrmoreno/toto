@@ -30,7 +30,7 @@ go get -u github.com/tiltfactor/toto
 ```
 
 
-# How
+# Usage
 First a game definition must be created and placed in a folder called _games_ in
 the directory where Toto is run. A game definition is written in TOML and
 looks like this:
