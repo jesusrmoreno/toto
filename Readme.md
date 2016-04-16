@@ -79,17 +79,16 @@ about room events.
 
 ### make-move
 This is sent from the client to the server when the player wants to make a move,
-the "move" is to be sent as a string value which should then be parsed as json
-by the other clients. The server currently makes no attempt to validate the json
-string but future iteration may include such a feature. The json string is
-therefore sent to all players in the group and it is up to the client to figure
+the "move" is to be sent as a json object that is then sent to be used
+by the other clients. The server currently makes no attempt to validate the json but future iteration 
+may include such a feature. The json is therefore sent to all players in the group and it is up to the client to figure
 out who is to do what.
 
 ### move-made
 this is the event that clients should listen to in order to receive moves that
-other players have made. the moves should be a string version of a json object
+other players have made. the moves should be a json object
 that can be parsed by the client but the server makes no promises that such a
-string is passed. As such the client should never execute anything that comes
+string is parsed or safe. As such the client should never execute (eval) anything that comes
 from this event
 
 ### client-error
@@ -101,6 +100,3 @@ different client. This is broadcast to all members of the group.
 This is sent by the server when an error occurs that generates on the server.
 An example is attempting to join a gameID for which there is no json file
 defined.
-
-# Todo
-Add minimum players
