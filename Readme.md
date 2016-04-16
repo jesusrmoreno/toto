@@ -6,8 +6,9 @@ writing a custom server for each prototype.
 
 __Toto__ __*is not*__ meant to be a finalized game server.
 You'll notice that __Toto__ offers nothing in the way of state management or
-validation. Because __Toto__ is meant to be a prototyping server it assumes
-perfect and well behaved clients.
+validation this is by design because __Toto__ is meant to be a prototyping
+server and nothing more. As a result it assumes perfect and well behaved
+clients.
 
 # Installing
 ```bash
@@ -80,7 +81,7 @@ about room events.
 ### make-move
 This is sent from the client to the server when the player wants to make a move,
 the "move" is to be sent as a json object that is then sent to be used
-by the other clients. The server currently makes no attempt to validate the json but future iteration 
+by the other clients. The server currently makes no attempt to validate the json but future iteration
 may include such a feature. The json is therefore sent to all players in the group and it is up to the client to figure
 out who is to do what.
 
