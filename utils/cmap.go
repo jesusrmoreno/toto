@@ -34,6 +34,13 @@ func (csm *ConcurrentStringMap) Get(key string) (string, bool) {
 	return data, exists
 }
 
+// Del deletes the value stored at key ...
+func (csm *ConcurrentStringMap) Del(key string) {
+	csm.Lock()
+	defer csm.Unlock()
+	delete(csm.data, key)
+}
+
 // ConcurrentStringIntMap ...
 type ConcurrentStringIntMap struct {
 	data map[string]int
@@ -62,4 +69,11 @@ func (csm *ConcurrentStringIntMap) Get(key string) (int, bool) {
 	defer csm.Unlock()
 	data, exists := csm.data[key]
 	return data, exists
+}
+
+// Del deletes the value stored at key ...
+func (csm *ConcurrentStringIntMap) Del(key string) {
+	csm.Lock()
+	defer csm.Unlock()
+	delete(csm.data, key)
 }
