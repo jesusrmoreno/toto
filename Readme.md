@@ -101,3 +101,60 @@ different client. This is broadcast to all members of the group.
 This is sent by the server when an error occurs that generates on the server.
 An example is attempting to join a gameID for which there is no json file
 defined.
+
+# Responses
+```javascript
+// client-error and server-error will always include the error field
+{
+  "timeStamp": 1460792552456716300,
+  "kind": "client-error",
+  "data": {
+    "error": "Invalid GameID"
+  }
+}
+
+// in-queue will include the message and the number of players currently in the
+// queue.
+{
+  "timeStamp": 1460792552507366000,
+  "kind": "in-queue",
+  "data": {
+    "message": "You are in the queue for game: Click Race!",
+    "playersInQueue": 1
+  }
+}
+
+// group-assignment will always include the room name and the turn number
+// assigned to the client
+{
+  "timeStamp": 1460792555406774000,
+  "kind": "group-assignment",
+  "data": {
+    "roomName": "2068-upset-pigs-swam-reproachfully",
+    "turnNumber": 0
+  }
+}
+
+// move-made will always have the fields madeBy and madeById overwritten by the
+// server and they will always be added to whatever the client sends.
+{
+  "timeStamp": 1460792555410103300,
+  "kind": "move-made",
+  "data": {
+    "clicks": 1,
+    "madeBy": 0,
+    "madeById": "RazcS5nrgT-2G7kX4HPP"
+  }
+}
+
+
+// player-disconnect will have the turn number of the player who disconnected
+{
+  "timeStamp": 1460792704214456000,
+  "kind": "player-disconnect",
+  "data": {
+    "player": 1
+  }
+}
+
+```

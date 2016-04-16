@@ -31,7 +31,6 @@ const (
 	playerDisconnect = "player-disconnect"
 	groupAssignment  = "group-assignment"
 	roomMessage      = "room-message"
-	joinGroup        = "join-group"
 	joinGame         = "join-game"
 	makeMove         = "make-move"
 	moveMade         = "move-made"
