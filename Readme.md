@@ -1,8 +1,8 @@
 # Toto :video_game:
 __Toto__ is a game server for creating quick prototypes of online multiplayer
-games. By exposing a few key events and acting essentially as a message relay
-Toto makes it easy to start prototyping multiplayer games without worrying about
-writing a custom server for each prototype.
+games. By leveraging socket.io and exposing a few key events to act essentially
+as a message relay. Toto makes it easy to start prototyping multiplayer games
+without worrying about writing a custom server for each prototype.
 
 __Toto__ __*is not*__ meant to be a finalized game server.
 You'll notice that __Toto__ offers nothing in the way of state management or
