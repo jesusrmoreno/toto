@@ -1,9 +1,13 @@
 # Toto :video_game:
-__Toto__ is a game server for creating quick prototypes of websocket based
-games. By exposing a few key events Toto makes it easy to start making
-multiplayer games. Toto serves as a relay point for communication between
-clients. It does not handle any of the game logic and expects that the clients
-will check all relayed messages.
+__Toto__ is a game server for creating quick prototypes of online multiplayer
+games. By exposing a few key events and acting essentially as a message relay
+Toto makes it easy to start prototyping multiplayer games without worrying about
+writing a custom server for each prototype.
+
+__Toto__ __*is not*__ meant to be a finalized game server.
+You'll notice that __Toto__ offers nothing in the way of state management or
+validation. Because __Toto__ is meant to be a prototyping server it assumes
+perfect and well behaved clients.
 
 # Installing
 ```bash
