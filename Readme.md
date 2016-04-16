@@ -55,55 +55,15 @@ __Toto__ expects the client to send when requesting to join a game.
 These are all required fields and __Toto__ will throw an error if there are
 fields missing or if the uniqueKey conflicts with another declared game.
 
-# Events
-### join-game
-join-game should be called with a uniqueKey that corresponds to the game the
-player wishes to join. This will place the player on a queue until the amount of
-players defined in playersInGroup are on the queue. When that happens a unique
-room id will be generated and the assigned-room is emitted to the player with
-the room name.
-
-### player-disconnect
-Will be sent in the event of a player disconnecting from the group. The player's
-turn will be included.
-
-### in-queue
-Sent when the player first gets added to the game queue.
-
-### group-assignment
-Sends the player the room name and turn assigned. The client should use this to
-initialize the client turn and room name.
-
-### room-message
-Is sent to everyone in the room. The client should subscribe to this to get info
-about room events.
-
-### make-move
-This is sent from the client to the server when the player wants to make a move,
-the "move" is to be sent as a json object that is then sent to be used
-by the other clients. The server currently makes no attempt to validate the json but future iteration
-may include such a feature. The json is therefore sent to all players in the group and it is up to the client to figure
-out who is to do what.
-
-### move-made
-this is the event that clients should listen to in order to receive moves that
-other players have made. the moves should be a json object
-that can be parsed by the client but the server makes no promises that such a
-string is parsed or safe. As such the client should never execute (eval) anything that comes
-from this event
-
-### client-error
-This should be sent by clients to the server in the case of a client error,
-this can be anything from malformed json to a bad move attempt on behalf of a
-different client. This is broadcast to all members of the group.
-
-### server-error
-This is sent by the server when an error occurs that generates on the server.
-An example is attempting to join a gameID for which there is no json file
-defined.
-
-# Responses
+# Events and JSON structure.
 ```javascript
+// To join the game clickRace we set the gameId to the uniqueKey defined in
+// the game file
+{
+  "gameId": "clickRace"
+}
+
+// If the gameId does not exist then you will receive a client error
 // client-error and server-error will always include the error field
 {
   "timeStamp": 1460792552456716300,
@@ -113,6 +73,9 @@ defined.
   }
 }
 
+
+
+// You will then receive a in-queue message
 // in-queue will include the message and the number of players currently in the
 // queue.
 {
@@ -124,6 +87,7 @@ defined.
   }
 }
 
+// After a while you will receive the group-assignment message
 // group-assignment will always include the room name and the turn number
 // assigned to the client
 {
@@ -135,8 +99,18 @@ defined.
   }
 }
 
-// move-made will always have the fields madeBy and madeById overwritten by the
-// server and they will always be added to whatever the client sends.
+// At this point the player has been added to the group room by the server so
+// we can make a move by emitting the event "make-move". This JSON could contain anything, 
+// with two exceptions. 
+// The fields madeBy and madeById will be overwritten by the server with the associated 
+// socketid and turn number.
+{
+    "clicks": 1
+}
+
+// All clients will receive the move 
+// And it is up to the client to only apply the other players moves
+// In this way you can also confirm that your move was indeed sent.
 {
   "timeStamp": 1460792555410103300,
   "kind": "move-made",
@@ -147,7 +121,7 @@ defined.
   }
 }
 
-
+// If a player disconnects then the player-disconnect event will be emitted.
 // player-disconnect will have the turn number of the player who disconnected
 {
   "timeStamp": 1460792704214456000,
@@ -156,5 +130,4 @@ defined.
     "player": 1
   }
 }
-
 ```
